@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: backend
+  template:
+    metadata:
+      name: backend
+      labels:
+        name: backend
+    spec:
+      containers:
+        - name: backend
+          # image: backend-chat:latest
+          image: theojust/theojust:backend-chat
+          ports:
+            - containerPort: 5000
+          # imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
+          # resources:
+          #   limits:
+          #     memory: 1024Mi
+          #     cpu: "1"
+          #   requests:
+          #     memory: 1024Mi
+          #     cpu: "1"
+          env:
+            - name: SASL_USERNAME
+              value: "theo"
+            - name: SASL_PASSWORD
+              value: "123456"
+            - name: REDPANDA_GROUP_ID
+              value: "privy_chat"
+            - name: BOOTSTRAP_SERVERS
+              # value: "redpanda-0.customredpanda.local:31092"
+              # value: "redpanda-0.redpanda.redpanda.svc.cluster.local.:9093"
+              value: "redpanda.redpanda.svc.cluster.local.:9093"
+            - name: TOPIC_NAME
+              value: "chat_app"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  # type: NodePort, use default ClusterIP because Ingress
+  selector:
+    name: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+      # nodePort: 30001
+      # name: backend
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  labels:
+    name: backend-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: backend.cariherb.id
+      http:
+        paths:
+          - path: /(.*)
+            pathType: Prefix
+            backend:
+              service: 
+                name: backend-service
+                port:
+                  number: 5000

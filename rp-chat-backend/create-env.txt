@@ -1,0 +1,6 @@
+python -m venv backend-env
+.\backend-env\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+.\backend-env\Scripts\deactivate.bat
